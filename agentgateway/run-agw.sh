@@ -1,0 +1,1 @@
+RUST_LOG=info agentgateway -f ./config.yaml

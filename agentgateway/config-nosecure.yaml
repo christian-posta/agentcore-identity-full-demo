@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=../../schema/local.json
+config:
+  tracing:
+    otlpEndpoint: http://localhost:4317
+    randomSampling: true
+binds:
+- port: 3000
+  listeners:
+  - hostname: "supply-chain-agent.localhost"
+    routes:
+    - policies:
+        # Mark this route as a2a traffic
+        a2a: {}
+        cors:
+          allowOrigins:
+            - "*"
+          allowHeaders:
+            - "*"
+      backends:
+      - host: localhost:9999
+
+  - hostname: "market-analysis-agent.localhost"
+    routes:
+    - policies:
+        # Mark this route as a2a traffic
+        a2a: {}
+        cors:
+          allowOrigins:
+            - "*"
+          allowHeaders:
+            - "*"
+      backends:
+      - host: localhost:9998      
+
+  - routes:
+    - name: general-mcp
+      matches:
+      - path:
+          pathPrefix: /general/mcp
+      policies:
+        cors:
+          allowOrigins:
+            - "*"
+          allowHeaders:
+            - "*"
+      backends:
+      - mcp:
+          targets:
+          - name: time
+            stdio:
+              cmd: uvx
+              args: ["mcp-server-time"]
+          - name: everything
+            stdio:
+              cmd: npx
+              args: ["@modelcontextprotocol/server-everything"]
+    
+    - name: git-mcp
+      matches:
+      - path:
+          pathPrefix: /git/mcp
+      policies:
+        cors:
+          allowOrigins:
+            - "*"
+          allowHeaders:
+            - "*"
+      backends:
+      - mcp:
+          targets:
+          - name: github
+            stdio:
+              cmd: npx
+              args: ["@modelcontextprotocol/server-github"]
+              env:
+                GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_AIRE_PAT}

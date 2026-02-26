@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=../../schema/local.json
+config:
+  tracing:
+    otlpEndpoint: http://localhost:4317
+    randomSampling: true
+binds:
+- port: 3000
+  listeners:
+  - hostname: "supply-chain-agent.localhost"
+    routes:
+    - policies:
+        # Mark this route as a2a traffic
+        a2a: {}
+        extAuthz:
+          host: "localhost:7070"  # Direct host:port reference
+          context:  # Custom context extensions sent to policy engine
+            environment: "development"
+            region: "us-west-1"
+            service: "agentgateway"        
+        jwtAuth:
+          mode: strict
+          issuer: http://localhost:8080/realms/mcp-realm
+          audiences: [agentgateway]
+          jwks:
+            url: http://localhost:8080/realms/mcp-realm/protocol/openid-connect/certs        
+        backendAuth:
+          passthrough: {}
+        authorization:
+          rules:
+          - 'jwt.preferred_username == "mcp-user"'
+        cors:
+          allowOrigins:
+            - "*"
+          allowHeaders:
+            - "*"
+      backends:
+      - host: localhost:9999
+
+  - hostname: "market-analysis-agent.localhost"
+    routes:
+    - policies:
+        # Mark this route as a2a traffic
+        a2a: {}
+        jwtAuth:
+          mode: strict
+          issuer: http://localhost:8080/realms/mcp-realm
+          audiences: [agentgateway]
+          jwks:
+            url: http://localhost:8080/realms/mcp-realm/protocol/openid-connect/certs             
+        cors:
+          allowOrigins:
+            - "*"
+          allowHeaders:
+            - "*"
+      backends:
+      - host: localhost:9998      
+
+  - routes:
+    - name: general-mcp
+      matches:
+      - path:
+          pathPrefix: /general/mcp
+      policies:
+        cors:
+          allowOrigins:
+            - "*"
+          allowHeaders:
+            - "*"
+      backends:
+      - mcp:
+          targets:
+          - name: time
+            stdio:
+              cmd: uvx
+              args: ["mcp-server-time"]
+          - name: everything
+            stdio:
+              cmd: npx
+              args: ["@modelcontextprotocol/server-everything"]
+          - name: mcp-sequential-thinking
+            stdio:
+              cmd: npx
+              args: ["@modelcontextprotocol/server-sequential-thinking"]              
+    
+
