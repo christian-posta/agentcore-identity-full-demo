@@ -53,7 +53,7 @@ const Login = ({ onLogin, error, isLoading }) => {
                   Signing in...
                 </>
               ) : (
-                'Sign in with Keycloak'
+                'Sign in with Auth0'
               )}
             </button>
           </div>
@@ -61,7 +61,7 @@ const Login = ({ onLogin, error, isLoading }) => {
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            Authentication provided by Keycloak
+            Authentication provided by Auth0
           </p>
         </div>
       </div>

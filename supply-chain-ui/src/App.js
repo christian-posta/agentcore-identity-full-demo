@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Shield, Clock, CheckCircle, DollarSign, Package, TrendingUp, AlertCircle } from 'lucide-react';
-import { useKeycloak } from './hooks/useKeycloak';
+import { useAuth0 } from './hooks/useAuth0';
 import { useOptimization } from './hooks/useOptimization';
 import Login from './components/Login';
 import UserDropdown from './components/UserDropdown';
@@ -260,7 +260,7 @@ const ResultsPanel = ({ results, isVisible }) => {
 
 // Main Dashboard Component
 const Dashboard = () => {
-  const { user, logout, keycloak } = useKeycloak();
+  const { user, logout, auth0 } = useAuth0();
   const {
     activities,
     isRunning,
@@ -278,16 +278,16 @@ const Dashboard = () => {
   
   const [optimizationPrompt, setOptimizationPrompt] = useState('');
 
-  // Set Keycloak instance in API service
+  // Set Auth0 instance in API service
   useEffect(() => {
-    if (keycloak) {
-      apiService.setKeycloak(keycloak);
+    if (auth0) {
+      apiService.setAuth(auth0);
     }
-  }, [keycloak]);
+  }, [auth0]);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Header user={user} onLogout={logout} keycloak={keycloak} />
+      <Header user={user} onLogout={logout} keycloak={auth0} />
       
       <div className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-12 gap-6 h-[calc(100vh-120px)]">
@@ -426,7 +426,7 @@ const Dashboard = () => {
 
 // Main App Component
 const App = () => {
-  const { user, isAuthenticated, isLoading, error, login } = useKeycloak();
+  const { user, isAuthenticated, isLoading, error, login } = useAuth0();
 
   if (isLoading) {
     return <LoadingScreen />;

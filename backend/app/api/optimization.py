@@ -7,7 +7,7 @@ from app.models import (
 )
 from app.services.optimization_service import optimization_service
 from app.services.a2a_service import a2a_service
-from app.services.keycloak_service import keycloak_service
+from app.services.auth0_service import auth0_service
 from app.services.agent_sts_service import agent_sts_service
 from app.tracing_config import span, add_event, set_attribute, extract_context_from_headers
 from fastapi.responses import JSONResponse
@@ -18,7 +18,7 @@ security = HTTPBearer()
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Dependency to get current authenticated user"""
     token = credentials.credentials
-    payload = keycloak_service.verify_token(token)
+    payload = auth0_service.verify_token(token)
     
     if not payload:
         raise HTTPException(

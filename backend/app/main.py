@@ -1,14 +1,17 @@
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load .env from backend/ directory before any imports that use env vars
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api import auth, agents, optimization
 from app.tracing_config import initialize_tracing
 from app.config import settings
-import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Initialize tracing before creating the FastAPI app
 jaeger_host = os.getenv("JAEGER_HOST", "localhost")  # Default to localhost for development

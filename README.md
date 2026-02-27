@@ -1,13 +1,13 @@
-# Supply Chain Agent with Istio & Keycloak
+# Supply Chain Agent with Istio & Auth0
 
 A full-stack application demonstrating autonomous agent workflows for supply chain optimization, featuring a React frontend and Python FastAPI backend.
 
 ## 🏗️ Architecture
 
 - **Frontend**: React with Tailwind CSS
-- **Backend**: Python FastAPI with Keycloak OIDC integration
+- **Backend**: Python FastAPI with Auth0 OIDC integration
 - **Agents**: Simulated supply chain optimization workflows
-- **Authentication**: Keycloak OIDC with JWT tokens
+- **Authentication**: Auth0 OIDC with JWT tokens
 - **Real-time**: Progress tracking and live updates
 
 ## 🚀 Quick Start
@@ -16,7 +16,7 @@ A full-stack application demonstrating autonomous agent workflows for supply cha
 - Python 3.8+
 - Node.js 16+
 - npm or yarn
-- Keycloak 26.2.5 running locally
+- Auth0 account (see AUTH0-SETUP.md)
 
 ### 1. Setup Virtual Environment
 ```bash
@@ -25,22 +25,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 2. Keycloak Setup
-```bash
-# Start Keycloak (Docker)
-docker run -p 8080:8080 \
-  -e KEYCLOAK_ADMIN=admin \
-  -e KEYCLOAK_ADMIN_PASSWORD=admin \
-  quay.io/keycloak/keycloak:26.2.5 \
-  start-dev
-```
+### 2. Auth0 Setup
 
-**Configure Keycloak:**
-1. Access Admin Console: http://localhost:8080
-2. Create realm: `mcp-realm`
-3. Create client: `supply-chain-ui`
-4. Create user: `christian` with password `password123`
-5. See `keycloak-setup.md` for detailed instructions
+1. Create an Auth0 account at https://auth0.com
+2. Follow the instructions in [AUTH0-SETUP.md](AUTH0-SETUP.md) to configure your Application and API
+3. Set environment variables in `supply-chain-ui/.env` and `backend/.env`
 
 ### 3. Backend Setup
 
@@ -69,10 +58,10 @@ The frontend will be available at:
 
 ## 🔐 Authentication
 
-**Keycloak Integration:**
-- **Realm**: `mcp-realm`
-- **Client**: `supply-chain-ui`
-- **Test User**: `christian` / `password123`
+**Auth0 Integration:**
+- See [AUTH0-SETUP.md](AUTH0-SETUP.md) for configuration
+- Set `REACT_APP_AUTH0_DOMAIN` and `REACT_APP_AUTH0_CLIENT_ID` in the frontend
+- Set `AUTH0_DOMAIN` in the backend
 
 ## 🧪 Testing
 
@@ -91,7 +80,7 @@ npm run build
 ## 📁 Project Structure
 
 ```
-agent-auth-istio-keycloak/
+agentcore-identity-full-demo/
 ├── .venv/                    # Python virtual environment
 ├── backend/                  # Python FastAPI backend
 │   ├── app/
@@ -227,7 +216,7 @@ npm start
 - **WebSocket**: Real-time bidirectional communication
 - **Kubernetes**: Container orchestration
 - **Istio**: Service mesh integration
-- **Keycloak**: Enterprise SSO integration
+- **Auth0**: Enterprise SSO integration
 - **Monitoring**: Metrics and observability
 - **Testing**: Comprehensive test suite
 

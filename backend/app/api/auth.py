@@ -1,30 +1,27 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.models import UserResponse
-from app.services.keycloak_service import keycloak_service
+from app.services.auth0_service import auth0_service
 
 router = APIRouter()
 security = HTTPBearer()
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get current user from Keycloak token"""
+    """Get current user from Auth0 token"""
     token = credentials.credentials
-    
+
     # Verify the token
-    payload = keycloak_service.verify_token(token)
+    payload = auth0_service.verify_token(token)
     if not payload:
         raise HTTPException(
             status_code=401,
             detail="Invalid or expired token"
         )
-    
-    # Get additional user info from Keycloak
-    user_info = keycloak_service.get_user_info(token)
-    if not user_info:
-        # Use token payload as fallback
-        user_info = payload
-    
-    return user_info
+
+    # Get additional user info from Auth0
+    user_info = auth0_service.get_user_info(token)
+    merged = auth0_service._map_to_user_response(payload, user_info)
+    return merged
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
@@ -42,7 +39,6 @@ async def auth_health():
     """Check authentication service health"""
     return {
         "status": "healthy",
-        "service": "keycloak-auth",
-        "keycloak_url": keycloak_service.server_url,
-        "realm": keycloak_service.realm
+        "service": "auth0",
+        "auth0_domain": auth0_service.domain
     }

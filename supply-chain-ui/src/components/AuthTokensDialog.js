@@ -64,8 +64,8 @@ const AuthTokensDialog = ({ isOpen, onClose, keycloak }) => {
             </div>
             <div className="flex items-center space-x-2">
               <Shield className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">Realm:</span>
-              <span className="text-sm font-medium">{tokenInfo.realm || 'N/A'}</span>
+              <span className="text-sm text-gray-600">Provider:</span>
+              <span className="text-sm font-medium">{keycloak?.realm || 'Auth0'}</span>
             </div>
           </div>
 

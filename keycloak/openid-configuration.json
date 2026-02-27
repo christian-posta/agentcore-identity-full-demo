@@ -1,0 +1,7 @@
+{
+  "issuer": "http://localhost:8080/realms/mcp-realm",
+  "jwks_uri": "https://keycloak-jwks-2ebe2847.s3.us-west-2.amazonaws.com/jwks",
+  "response_types_supported": ["id_token", "token"],
+  "subject_types_supported": ["public"],
+  "id_token_signing_alg_values_supported": ["RS256"]
+}

@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List
 from app.models import AgentStatusResponse, AgentActivity
 from app.services.agent_service import agent_service
-from app.services.keycloak_service import keycloak_service
+from app.services.auth0_service import auth0_service
 
 router = APIRouter()
 security = HTTPBearer()
@@ -11,7 +11,7 @@ security = HTTPBearer()
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Dependency to get current authenticated user"""
     token = credentials.credentials
-    payload = keycloak_service.verify_token(token)
+    payload = auth0_service.verify_token(token)
     
     if not payload:
         raise HTTPException(
@@ -19,6 +19,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             detail="Invalid or expired token"
         )
     
+    # Return payload with 'id' for compatibility (Auth0 uses 'sub')
+    if payload and "sub" in payload and "id" not in payload:
+        payload = {**payload, "id": payload["sub"]}
     return payload
 
 @router.get("/status", response_model=List[AgentStatusResponse])

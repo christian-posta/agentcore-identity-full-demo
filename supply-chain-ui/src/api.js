@@ -3,24 +3,24 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:800
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
-    this.keycloak = null;
+    this.auth = null;
   }
 
-  setKeycloak(keycloakInstance) {
-    this.keycloak = keycloakInstance;
+  setAuth(authInstance) {
+    this.auth = authInstance;
   }
 
   getToken() {
-    if (this.keycloak && this.keycloak.token) {
-      return this.keycloak.token;
+    if (this.auth && this.auth.token) {
+      return this.auth.token;
     }
     return null;
   }
 
   async refreshTokenIfNeeded() {
-    if (this.keycloak) {
+    if (this.auth && this.auth.updateToken) {
       try {
-        await this.keycloak.updateToken(70);
+        await this.auth.updateToken();
         return true;
       } catch (error) {
         console.error('Token refresh failed:', error);
@@ -35,14 +35,18 @@ class ApiService {
       'Content-Type': 'application/json',
     };
     
-    const token = this.getToken();
+    let token = this.getToken();
+    if (!token && this.auth && this.auth.updateToken) {
+      await this.refreshTokenIfNeeded();
+      token = this.getToken();
+    }
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
     // Add ID token for agent-to-agent authentication if available
-    if (this.keycloak && this.keycloak.idToken) {
-      headers['X-ID-Token'] = this.keycloak.idToken;
+    if (this.auth && this.auth.idToken) {
+      headers['X-ID-Token'] = this.auth.idToken;
     }
     
     return headers;
@@ -70,7 +74,7 @@ class ApiService {
     }
   }
 
-  // Authentication endpoints - now handled by Keycloak
+  // Authentication endpoints - now handled by Auth0
   async getCurrentUser() {
     return await this.request('/auth/me');
   }
