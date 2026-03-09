@@ -1,10 +1,14 @@
 import uvicorn
 import os
+import time
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
+from starlette.applications import Starlette
+from starlette.routing import Route, Mount
+from starlette.responses import JSONResponse
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -23,7 +27,17 @@ from agent_executor import (
 # Initialize OpenTelemetry tracing
 from tracing_config import initialize_tracing
 
-if __name__ == '__main__':
+
+async def ping_handler(request):
+    """AgentCore A2A contract: GET /ping returns health status."""
+    return JSONResponse({
+        "status": "Healthy",
+        "time_of_last_update": int(time.time()),
+    })
+
+
+def run():
+    """Initialize tracing, build A2A server with /ping, and run uvicorn."""
     # Initialize tracing before starting the server
     jaeger_host = os.getenv("JAEGER_HOST")
     jaeger_port = int(os.getenv("JAEGER_PORT", "4317"))
@@ -77,8 +91,8 @@ if __name__ == '__main__':
         ],
     )
 
-    # Get port from environment variable or use default
-    port = int(os.getenv("SUPPLY_CHAIN_AGENT_PORT", "9999"))
+    # Port: PORT for AgentCore (9000), else SUPPLY_CHAIN_AGENT_PORT for local dev (9999)
+    port = int(os.getenv("PORT", os.getenv("SUPPLY_CHAIN_AGENT_PORT", "9999")))
     
     # --8<-- [start:AgentCard]
     # Get agent URL from environment variable or use default
@@ -146,7 +160,20 @@ if __name__ == '__main__':
         extended_agent_card=specific_extended_agent_card,
     )
 
+    # Wrap A2A app with /ping for AgentCore contract; /ping first so it takes precedence
+    a2a_app = server.build()
+    app = Starlette(
+        routes=[
+            Route("/ping", ping_handler, methods=["GET"]),
+            Mount("/", a2a_app),
+        ]
+    )
+
     print(f"🚀 Starting Supply Chain Agent on port {port}")
     print(f"🔗 Agent URL: {agent_url}")
-    
-    uvicorn.run(server.build(), host='0.0.0.0', port=port)
+
+    uvicorn.run(app, host='0.0.0.0', port=port)
+
+
+if __name__ == '__main__':
+    run()

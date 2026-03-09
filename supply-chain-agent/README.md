@@ -4,6 +4,7 @@ A demonstration A2A agent that showcases enterprise supply chain optimization ca
 
 ## Quick Top Level Notes
 
+* **AgentCore deployment**: See [AGENTCORE.md](AGENTCORE.md) for deploying to Amazon Bedrock AgentCore Runtime and testing with the AgentCore CLI
 * this shows agent to agent communication and agent to mcp
 * you need to start the agentgateway
 * you need to have jaeger running (docker compose up)
@@ -49,7 +50,8 @@ cp .env.example .env
 ### Environment Variables
 
 - **`MARKET_ANALYSIS_AGENT_URL`**: URL for the market analysis agent (default: `http://localhost:9998/`)
-- **`SUPPLY_CHAIN_AGENT_PORT`**: Port for this agent to run on (default: `9999`)
+- **`PORT`**: Port (takes precedence over `SUPPLY_CHAIN_AGENT_PORT` when set). AgentCore sets this to 9000 for A2A.
+- **`SUPPLY_CHAIN_AGENT_PORT`**: Port for this agent to run on when `PORT` is not set (default: `9999`)
 - **`SUPPLY_CHAIN_AGENT_URL`**: External URL for this agent (default: `http://localhost:{port}/`)
 
 ### Tracing Configuration
@@ -79,13 +81,23 @@ SUPPLY_CHAIN_AGENT_URL=http://localhost:9999/
 
 ## Quick Start
 
+### 0. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+Or with uv: `uv sync`
+
 ### 1. Run the Agent
 
 ```bash
 uv run .
 ```
 
-The agent will start on `http://localhost:9999` and serve its agent card at `/.well-known/agent-card.json`.
+The agent will start on `http://localhost:9999` and serve its agent card at `/.well-known/agent-card.json`. It also exposes `GET /ping` for health checks.
+
+**Alternative:** Run with `python main.py` for port 9000 (AgentCore A2A contract). See [AGENTCORE.md](AGENTCORE.md) for AgentCore dev, deploy, and testing.
 
 ### 2. Test the Agent
 
@@ -184,13 +196,15 @@ This demonstrates how the `ENABLE_CONSOLE_EXPORTER` environment variable control
 
 ### Project Structure
 ```
-helloworld/
+supply-chain-agent/
 ├── agent_executor.py      # Core agent implementation
 ├── business_policies.py   # Business rules configuration
-├── __main__.py           # A2A server setup
-├── agent_card.json       # A2A protocol agent card
-├── test_client.py        # Comprehensive test suite
-└── README.md             # This file
+├── __main__.py            # A2A server setup (used by uv run .)
+├── main.py                # AgentCore entrypoint (port 9000 when PORT unset)
+├── agent_card.json        # A2A protocol agent card
+├── test_client.py         # Comprehensive test suite
+├── AGENTCORE.md           # AgentCore deploy and test guide
+└── README.md              # This file
 ```
 
 ### Adding New Policies
