@@ -36,12 +36,12 @@ async def ping_handler(request):
     })
 
 
-def run():
-    """Initialize tracing, build A2A server with /ping, and run uvicorn."""
+def create_app():
+    """Build and return the ASGI app (for uvicorn main:app / agentcore dev)."""
     # Initialize tracing before starting the server
     jaeger_host = os.getenv("JAEGER_HOST")
     jaeger_port = int(os.getenv("JAEGER_PORT", "4317"))
-    
+
     print("🔗 Initializing OpenTelemetry tracing...")
     initialize_tracing(
         service_name="supply-chain-agent",
@@ -49,10 +49,10 @@ def run():
         jaeger_port=jaeger_port,
         enable_console_exporter=None  # Will use environment variable ENABLE_CONSOLE_EXPORTER
     )
-    
+
     # Check console exporter status
     console_exporter_enabled = os.getenv("ENABLE_CONSOLE_EXPORTER", "true").lower() == "true"
-    
+
     if jaeger_host:
         print(f"🔗 Tracing configured with OTLP at {jaeger_host}:{jaeger_port}")
         if console_exporter_enabled:
@@ -64,7 +64,7 @@ def run():
             print("🔗 Tracing configured with console exporter only")
         else:
             print("🔗 Tracing configured with console exporter DISABLED")
-    
+
     # --8<-- [start:AgentSkill]
     skill = AgentSkill(
         id='supply_chain_optimization',
@@ -169,9 +169,15 @@ def run():
         ]
     )
 
-    print(f"🚀 Starting Supply Chain Agent on port {port}")
     print(f"🔗 Agent URL: {agent_url}")
+    return app
 
+
+def run():
+    """Build app and run uvicorn (for python __main__.py / python main.py)."""
+    port = int(os.getenv("PORT", os.getenv("SUPPLY_CHAIN_AGENT_PORT", "9999")))
+    app = create_app()
+    print(f"🚀 Starting Supply Chain Agent on port {port}")
     uvicorn.run(app, host='0.0.0.0', port=port)
 
 
