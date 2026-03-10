@@ -1,4 +1,8 @@
 scratchpad.md 
+.claude
+.cursor
+
+
 node_modules/
 npm-debug.log*
 yarn-debug.log*
