@@ -18,7 +18,7 @@ binds:
       backends:
       - aws:
           agentCore:
-            agentRuntimeArn: "arn:aws:bedrock-agentcore:us-west-2:606469916935:runtime/a2a_sca_iam-4rLvS1BRqq"
+            agentRuntimeArn: "arn:aws:bedrock-agentcore:us-west-2:606469916935:runtime/a2a_supply_chain_agent-CV8obwHtr5"
         policies:
           transformations:
             request:
