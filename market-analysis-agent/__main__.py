@@ -7,9 +7,13 @@ The agent provides market analysis capabilities for laptop demand forecasting an
 """
 
 import os
+import time
 import uvicorn
 from dotenv import load_dotenv
 
+from starlette.applications import Starlette
+from starlette.routing import Route, Mount
+from starlette.responses import JSONResponse
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -28,7 +32,41 @@ from tracing_config import initialize_tracing
 load_dotenv()
 
 
-if __name__ == '__main__':
+async def ping_handler(request):
+    """AgentCore A2A contract: GET /ping returns health status."""
+    return JSONResponse({
+        "status": "Healthy",
+        "time_of_last_update": int(time.time()),
+    })
+
+
+def create_app():
+    """Build and return the ASGI app (for uvicorn main:app / agentcore dev)."""
+    port = int(os.getenv("PORT", os.getenv("MARKET_ANALYSIS_AGENT_PORT", "9998")))
+
+    # Initialize OpenTelemetry tracing
+    jaeger_host = os.getenv("JAEGER_HOST")
+    jaeger_port = int(os.getenv("JAEGER_PORT", "4317"))
+    print("🔗 Initializing OpenTelemetry tracing...")
+    initialize_tracing(
+        service_name="market-analysis-agent",
+        jaeger_host=jaeger_host,
+        jaeger_port=jaeger_port,
+        enable_console_exporter=None  # Will use environment variable ENABLE_CONSOLE_EXPORTER
+    )
+    console_exporter_enabled = os.getenv("ENABLE_CONSOLE_EXPORTER", "true").lower() == "true"
+    if jaeger_host:
+        print(f"🔗 Tracing configured with OTLP at {jaeger_host}:{jaeger_port}")
+        if console_exporter_enabled:
+            print("🔗 Console trace span logging: ENABLED")
+        else:
+            print("🔗 Console trace span logging: DISABLED")
+    else:
+        if console_exporter_enabled:
+            print("🔗 Tracing configured with console exporter only")
+        else:
+            print("🔗 Console trace span logging: DISABLED")
+
     # Define the three core skills
     inventory_analysis_skill = AgentSkill(
         id='inventory_demand_analysis',
@@ -40,7 +78,6 @@ if __name__ == '__main__':
             'Compare current laptop stock levels against 3-month demand forecast'
         ],
     )
-
     market_forecasting_skill = AgentSkill(
         id='market_trend_forecasting',
         name='Technology Market Trend Forecasting',
@@ -51,7 +88,6 @@ if __name__ == '__main__':
             'Assess market availability risks for bulk laptop orders'
         ],
     )
-
     demand_modeling_skill = AgentSkill(
         id='demand_pattern_modeling',
         name='Employee Demand Pattern Modeling',
@@ -63,11 +99,11 @@ if __name__ == '__main__':
         ],
     )
 
-    # Public agent card with basic skills
+    agent_url = os.getenv("MARKET_ANALYSIS_AGENT_URL", f"http://localhost:{port}/")
     public_agent_card = AgentCard(
         name='Market Analysis Agent',
         description='Domain expert for understanding laptop demand, inventory trends, and market conditions. Specializes in analyzing inventory levels, forecasting market trends, and modeling employee demand patterns to optimize laptop procurement decisions.',
-        url='http://localhost:9998/',
+        url=agent_url,
         version='1.0.0',
         protocol_version='0.3.0',
         preferred_transport='JSONRPC',
@@ -80,9 +116,8 @@ if __name__ == '__main__':
         default_input_modes=['text/plain', 'application/json'],
         default_output_modes=['text/plain', 'application/json'],
         capabilities=AgentCapabilities(streaming=False),
-        skills=[inventory_analysis_skill, market_forecasting_skill],  # Basic skills for public card
+        skills=[inventory_analysis_skill, market_forecasting_skill],
         supports_authenticated_extended_card=True,
-        # Security configuration
         security_schemes={
             'bearerAuth': SecurityScheme(
                 root=HTTPAuthSecurityScheme(
@@ -96,8 +131,6 @@ if __name__ == '__main__':
             {'bearerAuth': ['market-analysis:analyze', 'agents:delegate']}
         ],
     )
-
-    # Extended agent card with all skills for authenticated users
     extended_agent_card = public_agent_card.model_copy(
         update={
             'name': 'Market Analysis Agent - Extended Edition',
@@ -107,52 +140,38 @@ if __name__ == '__main__':
                 inventory_analysis_skill,
                 market_forecasting_skill,
                 demand_modeling_skill,
-            ],  # All three skills for extended card
+            ],
         }
     )
 
-    # Set up request handler with the market analysis executor
     request_handler = DefaultRequestHandler(
         agent_executor=MarketAnalysisAgentExecutor(),
         task_store=InMemoryTaskStore(),
     )
-
-    # Create the A2A server application
     server = A2AStarletteApplication(
         agent_card=public_agent_card,
         http_handler=request_handler,
         extended_agent_card=extended_agent_card,
     )
-
-    # Initialize OpenTelemetry tracing
-    jaeger_host = os.getenv("JAEGER_HOST")
-    jaeger_port = int(os.getenv("JAEGER_PORT", "4317"))
-    
-    initialize_tracing(
-        service_name="market-analysis-agent",
-        jaeger_host=jaeger_host,
-        jaeger_port=jaeger_port,
-        enable_console_exporter=None  # Will use environment variable ENABLE_CONSOLE_EXPORTER
+    a2a_app = server.build()
+    app = Starlette(
+        routes=[
+            Route("/ping", ping_handler, methods=["GET"]),
+            Mount("/", a2a_app),
+        ]
     )
-    
-    # Check console exporter status
-    console_exporter_enabled = os.getenv("ENABLE_CONSOLE_EXPORTER", "true").lower() == "true"
-    
-    if jaeger_host:
-        print(f"🔗 Tracing configured with OTLP at {jaeger_host}:{jaeger_port}")
-        if console_exporter_enabled:
-            print("🔗 Console trace span logging: ENABLED")
-        else:
-            print("🔗 Console trace span logging: DISABLED")
-    else:
-        if console_exporter_enabled:
-            print("🔗 Tracing configured with console exporter only")
-        else:
-            print("🔗 Tracing configured with console exporter DISABLED")
+    print(f"🔗 Agent URL: {agent_url}")
+    return app
 
-    # Start the server on port 9998 (different from supply-chain-agent's 9999)
-    print("🚀 Starting Market Analysis Agent on http://localhost:9998")
-    print("📊 Agent Card: http://localhost:9998/.well-known/agent-card.json")
-    print("🔍 Skills: Inventory Analysis, Market Forecasting, Demand Modeling")
-    
-    uvicorn.run(server.build(), host='0.0.0.0', port=9998)
+
+def run():
+    """Build app and run uvicorn (for python __main__.py / python main.py)."""
+    port = int(os.getenv("PORT", os.getenv("MARKET_ANALYSIS_AGENT_PORT", "9998")))
+    app = create_app()
+    print(f"🚀 Starting Market Analysis Agent on port {port}")
+    print("📊 Agent Card: http://localhost:{port}/.well-known/agent-card.json".format(port=port))
+    uvicorn.run(app, host='0.0.0.0', port=port)
+
+
+if __name__ == '__main__':
+    run()

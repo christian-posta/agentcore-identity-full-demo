@@ -25,3 +25,23 @@ binds:
               set:
                 X-Amzn-Bedrock-AgentCore-Runtime-User-Id: "user-foo"
                 X-Amzn-Bedrock-AgentCore-Runtime-Custom-User-Id: "user-foo"
+    - matches:
+      - path:
+          pathPrefix: /market-analysis-agent
+      policies:
+        jwtAuth:
+          mode: strict
+          issuer: https://ceposta-solo.auth0.com/
+          audiences: [https://api.supply-chain-ui.local]
+          jwks:
+            url: https://ceposta-solo.auth0.com/.well-known/jwks.json
+      backends:
+      - aws:
+          agentCore:
+            agentRuntimeArn: "arn:aws:bedrock-agentcore:us-west-2:606469916935:runtime/a2a_market_analysis_agent-p01WtBCl4k"
+        policies:
+          transformations:
+            request:
+              set:
+                X-Amzn-Bedrock-AgentCore-Runtime-User-Id: "user-foo"
+                X-Amzn-Bedrock-AgentCore-Runtime-Custom-User-Id: "user-foo"

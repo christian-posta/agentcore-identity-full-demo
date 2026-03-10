@@ -1,0 +1,64 @@
+default_agent: a2a_market_analysis_agent
+agents:
+  a2a_market_analysis_agent:
+    name: a2a_market_analysis_agent
+    language: python
+    node_version: '20'
+    entrypoint: /Users/christian.posta/python/agentcore-identity-full-demo/market-analysis-agent/main.py
+    deployment_type: direct_code_deploy
+    runtime_type: PYTHON_3_11
+    platform: linux/arm64
+    container_runtime: null
+    source_path: /Users/christian.posta/python/agentcore-identity-full-demo/market-analysis-agent
+    aws:
+      execution_role: arn:aws:iam::606469916935:role/AmazonBedrockAgentCoreSDKRuntime-us-west-2-df1b9d7cfc
+      execution_role_auto_create: false
+      account: '606469916935'
+      region: us-west-2
+      ecr_repository: null
+      ecr_auto_create: false
+      s3_path: s3://bedrock-agentcore-codebuild-sources-606469916935-us-west-2
+      s3_auto_create: false
+      network_configuration:
+        network_mode: PUBLIC
+        network_mode_config: null
+      protocol_configuration:
+        server_protocol: A2A
+      observability:
+        enabled: true
+      lifecycle_configuration:
+        idle_runtime_session_timeout: null
+        max_lifetime: null
+    bedrock_agentcore:
+      agent_id: a2a_market_analysis_agent-p01WtBCl4k
+      agent_arn: arn:aws:bedrock-agentcore:us-west-2:606469916935:runtime/a2a_market_analysis_agent-p01WtBCl4k
+      agent_session_id: null
+    codebuild:
+      project_name: null
+      execution_role: null
+      source_bucket: null
+    memory:
+      mode: NO_MEMORY
+      memory_id: null
+      memory_arn: null
+      memory_name: null
+      event_expiry_days: 30
+      first_invoke_memory_check_done: false
+      was_created_by_toolkit: false
+    identity:
+      credential_providers: []
+      workload: null
+    aws_jwt:
+      enabled: false
+      audiences: []
+      signing_algorithm: ES384
+      issuer_url: null
+      duration_seconds: 300
+    authorizer_configuration: null
+    request_header_configuration:
+      requestHeaderAllowlist:
+      - X-Amzn-Bedrock-AgentCore-Runtime-Custom-User-Id
+    oauth_configuration: null
+    api_key_env_var_name: null
+    api_key_credential_provider_name: null
+    is_generated_by_agentcore_create: false

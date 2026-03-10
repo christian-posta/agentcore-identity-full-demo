@@ -37,10 +37,6 @@ spec:
           value: "30"
         - name: MCP_READ_TIMEOUT
           value: "60"
-        - name: AGENT_STS_URL
-          value: "http://agent-sts.default:8081"
-        - name: MARKET_ANALYSIS_SPIFFE_ID
-          value: "spiffe://cluster.local/ns/default/sa/market-analysis-agent"
         - name: JAEGER_HOST
           value: "jaeger-collector.istio-system"
         - name: JAEGER_PORT
