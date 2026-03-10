@@ -14,7 +14,6 @@ from app.config import settings
 from app.models import OptimizationRequest, OptimizationProgress, OptimizationResults
 from app.tracing_config import span, add_event, set_attribute, extract_context_from_headers
 from app.services.tracing_interceptor import TracingInterceptor
-from app.services.agent_sts_service import agent_sts_service
 
 
 class A2AService:
@@ -40,23 +39,11 @@ class A2AService:
             print(f"🔧 Creating A2A client for URL: {self.agent_url}")
             add_event("creating_a2a_client", {"agent_url": self.agent_url})
             
-            # Exchange access token for OBO token if provided
-            obo_token = None
+            # Use Auth0 access token directly for AgentGateway (no STS exchange)
+            auth_token_forward = auth_token
             if auth_token:
-                print(f"🔄 Exchanging access token for OBO token...")
-                obo_token = await agent_sts_service.exchange_token(
-                    access_token=auth_token,
-                    resource="supply-chain-agent",
-                    actor_token=settings.backend_spiffe_id
-                )
-                
-                if obo_token:
-                    print(f"✅ Token exchange successful, using OBO token for agent authentication")
-                    add_event("token_exchange_successful_for_client")
-                else:
-                    print(f"⚠️ Token exchange failed, falling back to original access token")
-                    add_event("token_exchange_failed_fallback")
-                    obo_token = auth_token  # Fallback to original token
+                print(f"🔐 Using Auth0 access token for AgentGateway authentication")
+                add_event("auth0_token_used_for_agent_gateway")
             else:
                 print(f"⚠️ No auth token provided, proceeding without authentication")
                 add_event("no_auth_token_provided")
@@ -87,12 +74,12 @@ class A2AService:
             print(f"✅ Agent card created: {agent_card}")
             add_event("agent_card_created", {"agent_url": self.agent_url})
             
-            # Create auth token headers for agent authentication
+            # Create auth token headers (Auth0 token forwarded to AgentGateway)
             auth_token_headers = {}
-            if obo_token:
-                auth_token_headers["Authorization"] = f"Bearer {obo_token}"
-                print("🔐 OBO token added to headers for agent authentication")
-                add_event("obo_token_added_to_headers")
+            if auth_token_forward:
+                auth_token_headers["Authorization"] = f"Bearer {auth_token_forward}"
+                print("🔐 Auth0 token added to headers for AgentGateway")
+                add_event("auth0_token_added_to_headers")
             
             # Create tracing interceptor with auth token headers
             tracing_interceptor = TracingInterceptor(trace_headers=auth_token_headers)
@@ -100,8 +87,8 @@ class A2AService:
             
             # Create client with tracing interceptor
             client = factory.create(agent_card, interceptors=[tracing_interceptor])
-            print("✅ A2A client created with tracing and OBO token authentication")
-            add_event("a2a_client_created_with_tracing_and_obo_token")
+            print("✅ A2A client created with tracing and Auth0 token")
+            add_event("a2a_client_created_with_tracing_and_auth0_token")
             
             return client, httpx_client
     
@@ -367,7 +354,7 @@ class A2AService:
         return False
     
     async def test_connection(self, auth_token: str = None) -> Dict[str, Any]:
-        """Test connection to the A2A agent with tracing support and OBO token authentication"""
+        """Test connection to the A2A agent via AgentGateway with Auth0 token"""
         with span("a2a_service.test_connection", {
             "agent_url": self.agent_url,
             "has_auth_token": auth_token is not None
@@ -376,26 +363,8 @@ class A2AService:
             try:
                 add_event("connection_test_started", {"agent_url": self.agent_url})
                 
-                # Exchange access token for OBO token if provided
-                obo_token = None
-                if auth_token:
-                    print(f"🔄 Exchanging access token for OBO token for connection test...")
-                    obo_token = await agent_sts_service.exchange_token(
-                        access_token=auth_token,
-                        resource="supply-chain-agent",
-                        actor_token=settings.backend_spiffe_id
-                    )
-                    
-                    if obo_token:
-                        print(f"✅ Token exchange successful for connection test")
-                        add_event("token_exchange_successful_for_test")
-                    else:
-                        print(f"⚠️ Token exchange failed for connection test, using original token")
-                        add_event("token_exchange_failed_for_test")
-                        obo_token = auth_token  # Fallback to original token
-                
-                # Create a simple test client
-                client, httpx_client = await self._create_client(auth_token=obo_token)
+                # Create client with Auth0 token (no STS exchange)
+                client, httpx_client = await self._create_client(auth_token=auth_token)
                 
                 # Test with a simple message
                 test_message = create_text_message_object(

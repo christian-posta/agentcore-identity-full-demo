@@ -1,7 +1,7 @@
 scratchpad.md 
 .claude
 .cursor
-
+aws-creds.env
 
 node_modules/
 npm-debug.log*

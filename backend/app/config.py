@@ -23,11 +23,7 @@ class Settings:
     max_concurrent_agents: int = 5
     agent_timeout_seconds: int = 300
     
-    # A2A Configuration
-    supply_chain_agent_url: str = os.getenv("SUPPLY_CHAIN_AGENT_URL", "http://supply-chain-agent.localhost:3000")
-    
-    # Agent STS Configuration
-    agent_sts_url: str = os.getenv("AGENT_STS_URL", "http://localhost:8081")
-    backend_spiffe_id: str = os.getenv("BACKEND_SPIFFE_ID", "spiffe://cluster.local/ns/default/sa/backend")
+    # A2A Configuration (AgentGateway base URL; backend sends Auth0 token directly)
+    supply_chain_agent_url: str = os.getenv("SUPPLY_CHAIN_AGENT_URL", "http://localhost:3000/supply-chain-agent")
 
 settings = Settings()

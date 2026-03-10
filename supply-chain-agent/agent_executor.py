@@ -14,7 +14,6 @@ from tracing_config import (
     span, add_event, set_attribute, extract_context_from_headers, 
     inject_context_to_headers, initialize_tracing
 )
-from agent_sts_service import agent_sts_service
 
 
 class TracingInterceptor(ClientCallInterceptor):
@@ -648,37 +647,15 @@ class SupplyChainOptimizerExecutor(AgentExecutor):
         print(f"🔍 Executor: Final request_text: '{request_text}'")
         
         try:
-            # Store JWT token in agent instance for later use in a2a calls
+            # Store JWT token in agent instance for a2a and market-analysis delegation
             if jwt_token:
                 self.agent.jwt_token = jwt_token
+                # Use same JWT for market-analysis-agent (no STS exchange; gateway may accept it)
+                self.agent.exchanged_obo_token = jwt_token
                 print(f"🔐 JWT token stored in agent instance for a2a calls")
                 print(f"🔐 Stored token length: {len(jwt_token)} characters")
-                print(f"🔐 Stored token first 50 chars: {jwt_token[:50]}...")
-                print(f"🔐 Stored token last 50 chars: ...{jwt_token[-50:]}")
-                print(f"🔐 Full JWT token received: {jwt_token}")
                 add_event("jwt_token_stored_in_agent")
                 set_attribute("auth.jwt_stored", True)
-                
-                # Exchange the OBO token for a market-analysis-agent targeted OBO token
-                print(f"🔄 Exchanging OBO token for market-analysis-agent targeted token...")
-                exchanged_token = await agent_sts_service.exchange_token(
-                    obo_token=jwt_token,
-                    resource="market-analysis-agent",
-                    actor_token=os.getenv("SUPPLY_CHAIN_SPIFFE_ID", "spiffe://cluster.local/ns/default/sa/supply-chain-agent")
-                )
-                
-                if exchanged_token:
-                    self.agent.exchanged_obo_token = exchanged_token
-                    print(f"✅ OBO token exchange successful for market-analysis-agent")
-                    print(f"🔐 Exchanged token length: {len(exchanged_token)} characters")
-                    print(f"🔐 Exchanged token first 50 chars: {exchanged_token[:50]}...")
-                    add_event("obo_token_exchange_successful_for_market_analysis")
-                    set_attribute("auth.obo_exchange_success", True)
-                else:
-                    print(f"⚠️ OBO token exchange failed, will use original token")
-                    self.agent.exchanged_obo_token = jwt_token  # Fallback to original token
-                    add_event("obo_token_exchange_failed_fallback")
-                    set_attribute("auth.obo_exchange_success", False)
             else:
                 print(f"⚠️  No JWT token available for a2a calls")
                 add_event("no_jwt_token_for_a2a")
